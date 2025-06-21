@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🧠 PGP Puzzle Gate (User Restricted)</title>
+  <script src="https://unpkg.com/openpgp@5.5.0/dist/openpgp.min.js"></script>
+</head>
+<body>
+  <h1>🧠 Welcome to the Restricted Puzzle Gate</h1>
+
+  <h3>🔑 Step 1: Paste your PGP Public Key</h3>
+  <textarea id="pubkey" rows="10" cols="60" placeholder="-----BEGIN PGP PUBLIC KEY-----"></textarea><br>
+  <button onclick="startChallenge()">Generate Challenge</button>
+
+  <div id="step2" style="display:none;">
+    <h3>📩 Step 2: Decrypt this message:</h3>
+    <textarea id="encryptedMsg" rows="10" cols="60" readonly></textarea><br>
+    <h3>🧠 Step 3: Solve and Enter Answer</h3>
+    <input type="text" id="solution" placeholder="Enter answer">
+    <button onclick="checkAnswer()">Submit</button>
+  </div>
+
+  <div id="result" style="display:none;">
+    <h2 id="resultText"></h2>
+  </div>
+
+  <script>
+    const allowedUID = "mohamed@example.com"; // ✅ Your target user ID
+    const puzzleAnswer = "shadow"; // The answer to the puzzle
+    const puzzleText = `
+Welcome, trusted agent 🕵️‍♂️
+
+Solve this to continue:
+- 1st letter of "silent"
+- 3rd letter of "message"
+- 2nd letter of "ghost"
+- 1st letter of "agent"
+- 4th letter of "shadow"
+- 6th letter of "shadow"
+
+Put it all together.
+`;
+
+    async function startChallenge() {
+      const pubkeyArmored = document.getElementById("pubkey").value.trim();
+
+      try {
+        const publicKey = await openpgp.readKey({ armoredKey: pubkeyArmored });
+
+        // Get user IDs from the key
+        const userIDs = publicKey.getUserIDs(); // returns array like ["Mohamed Hamici <mohamed@example.com>"]
+
+        const valid = userIDs.some(uid => uid.includes(allowedUID));
+        if (!valid) {
+          alert("❌ This key is not authorized. You are not the chosen one 🔒");
+          return;
+        }
+
+        // If valid, encrypt puzzle
+        const message = await openpgp.createMessage({ text: puzzleText });
+        const encrypted = await openpgp.encrypt({
+          message,
+          encryptionKeys: publicKey
+        });
+
+        document.getElementById("encryptedMsg").value = encrypted;
+        document.getElementById("step2").style.display = "block";
+      } catch (err) {
+        alert("❌ Invalid PGP key or encryption failed.");
+      }
+    }
+
+    function checkAnswer() {
+      const userAnswer = document.getElementById("solution").value.trim().toLowerCase();
+      const resultDiv = document.getElementById("result");
+      const resultText = document.getElementById("resultText");
+
+      if (userAnswer === puzzleAnswer) {
+        resultText.innerHTML = "✅ Access Granted. Welcome, Agent Mohamed! 🎉";
+        resultText.style.color = "green";
+      } else {
+        resultText.innerHTML = "❌ Wrong answer. Try again.";
+        resultText.style.color = "red";
+      }
+      resultDiv.style.display = "block";
+    }
+  </script>
+</body>
+</html>
